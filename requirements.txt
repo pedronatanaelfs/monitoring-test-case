@@ -1,0 +1,6 @@
+pandas==1.5.3
+seaborn==0.12.2
+matplotlib==3.7.5
+dash==2.15.0
+Werkzeug==2.0.0
+ipykernel==6.20.2
