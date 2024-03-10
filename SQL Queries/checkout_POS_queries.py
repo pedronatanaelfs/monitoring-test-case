@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # Função para executar uma consulta SQL e retornar o resultado em um DataFrame
 def execute_sql_query(conn, query):
@@ -27,26 +28,63 @@ if __name__ == '__main__':
     # Create a connection with the new database
     new_connection = sqlite3.connect(new_database_file)
 
-    # SQL Query - POS 1
+    # SQL Query - Anomalies POS 1
     query_pos1 = '''
-    SELECT *
-    FROM checkout_1
+    WITH AnomalyCTE AS (
+      SELECT
+        time,
+        today as anomalies,
+        CASE
+          WHEN (today < 0.5 * yesterday) AND
+               (today < 0.5 * same_day_last_week) AND
+               (today < 0.5 * avg_last_week) AND
+               (today < 0.5 * avg_last_month) AND
+               (avg_last_month > 1)
+          THEN 'Anomaly'
+          ELSE 'Normal'
+        END AS anomaly_status
+      FROM
+        checkout_1
+    )
+
+    SELECT
+      time,
+      anomalies,
+      anomaly_status
+    FROM
+      AnomalyCTE
     WHERE
-        (today < 0.5 * yesterday) AND
-        ((today > 1.5 * avg_last_week) OR (today < 0.5 * avg_last_week)) AND
-        ((today > 1.5 * avg_last_month) OR (today < 0.5 * avg_last_month)) OR
-        ((today = 0) AND (yesterday != 0) AND (avg_last_week != 0) AND (avg_last_month != 0));
+      anomaly_status = 'Anomaly';
     '''
 
-    # SQL Query - POS 2
+    # SQL Query - Anomalies POS 2
     query_pos2 = '''
-    SELECT *
-    FROM checkout_2
+    WITH AnomalyCTE AS (
+      SELECT
+        time,
+        today as anomalies,
+        CASE
+          WHEN (today < 0.5 * yesterday) AND
+               (today < 0.5 * same_day_last_week) AND
+               (today < 0.5 * avg_last_week) AND
+               (today < 0.5 * avg_last_month) AND
+               (avg_last_month > 1)
+          THEN 'Anomaly'
+          ELSE 'Normal'
+        END AS anomaly_status
+      FROM
+        checkout_2
+    )
+
+    SELECT
+      time,
+      anomalies,
+      anomaly_status
+    FROM
+      AnomalyCTE
     WHERE
-        (today < 0.5 * yesterday) AND
-        ((today > 2 * avg_last_week) OR (today < 0.5 * avg_last_week)) AND
-        ((today > 2 * avg_last_month) OR (today < 0.5 * avg_last_month)) OR
-        ((today = 0) AND (yesterday != 0) AND (avg_last_week != 0) AND (avg_last_month != 0));
+      anomaly_status = 'Anomaly';
+
     '''
 
     # Display results of the queries
