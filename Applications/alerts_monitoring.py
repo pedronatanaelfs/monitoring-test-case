@@ -22,6 +22,14 @@ with open('./models/IF_model.pkl', 'rb') as model_file:
 email_address = 'pedronatanaelfs@gmail.com'
 email_password = 'ceknakxfeioaabjc'
 
+# Alerts Configuration
+
+failed_transactions_limit = 1
+failed_transactions_pending_period = 2
+
+reversed_transactions_limit = 6
+reversed_transactions_pending_period = 3
+
 # Function to send email
 def send_email(subject, message):
     from_email = email_address
@@ -62,32 +70,32 @@ def get_data_from_database(table_name, minutes_ago=1):
 # Function to verify alerts
 def check_alerts():
     # Failed Alert 1
-    data_alert_failed_1 = get_data_from_database(table_name_1, minutes_ago=2)
-    count_failed = sum(1 for _, status, count in data_alert_failed_1 if status == 'failed' and count > 1)
+    data_alert_failed_1 = get_data_from_database(table_name_1, minutes_ago=failed_transactions_pending_period)
+    count_failed = sum(1 for _, status, count in data_alert_failed_1 if status == 'failed' and count > failed_transactions_limit)
 
     if count_failed >= 2:
         #send_email('Failed Alert', 'There were two or more failed cases for 2 consecutive minutes in transactions_1.')
         print('Failed Alert 1')
 
     # Failed Alert 2
-    data_alert_failed_2 = get_data_from_database(table_name_2, minutes_ago=2)
-    count_failed = sum(1 for _, status, count in data_alert_failed_2 if status == 'failed' and count > 1)
+    data_alert_failed_2 = get_data_from_database(table_name_2, minutes_ago=failed_transactions_pending_period)
+    count_failed = sum(1 for _, status, count in data_alert_failed_2 if status == 'failed' and count > failed_transactions_limit)
 
     if count_failed >= 2:
         #send_email('Failed Alert', 'There were two or more failed cases for 2 consecutive minutes in transactions_2.')
         print('Failed Alert 2')
 
     # Reversed Alert 1
-    data_alert_reversed_1 = get_data_from_database(table_name_1, minutes_ago=3)
-    count_reversed = sum(1 for _, status, count in data_alert_reversed_1 if status == 'reversed' and count > 6)
+    data_alert_reversed_1 = get_data_from_database(table_name_1, minutes_ago=reversed_transactions_pending_period)
+    count_reversed = sum(1 for _, status, count in data_alert_reversed_1 if status == 'reversed' and count > reversed_transactions_limit)
 
     if count_reversed >= 3:
         #send_email('Reversed Alert', 'There were three or more reversed cases with a count greater than 6 for 3 consecutive minutes in transactions_1.')
         print('Reversed Alert 1')
 
     # Reversed Alert 2
-    data_alert_reversed_2 = get_data_from_database(table_name_2, minutes_ago=3)
-    count_reversed = sum(1 for _, status, count in data_alert_reversed_2 if status == 'reversed' and count > 6)
+    data_alert_reversed_2 = get_data_from_database(table_name_2, minutes_ago=reversed_transactions_pending_period)
+    count_reversed = sum(1 for _, status, count in data_alert_reversed_2 if status == 'reversed' and count > reversed_transactions_limit)
 
     if count_reversed >= 3:
         #send_email('Reversed Alert', 'There were three or more reversed cases with a count greater than 6 for 3 consecutive minutes in transactions_2.')
