@@ -65,7 +65,7 @@ def predict():
     # Check if data is available
     if data_from_postgres:
         # Create DataFrame from the retrieved data
-        df_input = pd.DataFrame([dict(status_num=2, f0_=data_from_postgres[2])])
+        df_input = pd.DataFrame([dict(status_num=2, count=data_from_postgres[2])])
 
         # Predict using the loaded model
         anomaly = model.predict(df_input)

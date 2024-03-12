@@ -1,66 +1,109 @@
 import sqlite3
-from sqlite3 import Error
+import csv
+from datetime import datetime, date
+import time
 
-# Function to create a connection with the database
-def create_connection(db_file):
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        print(f"Connection established with {sqlite3.version}")
-        return conn
-    except Error as e:
-        print(e)
-    return conn
+# Caminho para o arquivo do banco de dados SQLite
+database_file = './data/Database/transactions.db'
 
-# Function to create the transactions table
-def create_transactions_table(conn):
-    sql_create_transactions_table = """
-    CREATE TABLE IF NOT EXISTS transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        time TEXT NOT NULL,
-        status TEXT NOT NULL,
-        quantity INTEGER NOT NULL
-    );
-    """
+# Conectar ao banco de dados SQLite
+connection = sqlite3.connect(database_file)
 
-    try:
-        cursor = conn.cursor()
-        cursor.execute(sql_create_transactions_table)
-        print("Transactions table created successfully.")
-    except Error as e:
-        print(e)
+# Criar um cursor para executar comandos SQL
+cursor = connection.cursor()
 
-# Function to insert data into the transactions table
-def insert_transaction(conn, time, status, quantity):
-    sql_insert_transaction = """
-    INSERT INTO transactions (time, status, quantity)
-    VALUES (?, ?, ?);
-    """
+# Nome das tabelas
+table_name_1 = "realtime_trs_1"
+table_name_2 = "realtime_trs_2"
 
-    try:
-        cursor = conn.cursor()
-        cursor.execute(sql_insert_transaction, (time, status, quantity))
-        conn.commit()
-        print("Data inserted successfully.")
-    except Error as e:
-        print(e)
+# Caminhos dos arquivos CSV
+csv_file_path_1 = "./data/Transactions/transactions_1.csv"
+csv_file_path_2 = "./data/Transactions/transactions_2.csv"
 
-# Usage
-if __name__ == '__main__':
-    # Path to database file
-    database_file = './data/Database/transactions.db'
+# Criar Tabela 1
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS {} (
+        time timestamp,
+        status text,
+        count integer
+    )
+""".format(table_name_1))
 
-    # Create a connection with the database
-    connection = create_connection(database_file)
+# Criar Tabela 2
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS {} (
+        time timestamp,
+        status text,
+        count integer
+    )
+""".format(table_name_2))
 
-    # Create the transactions table
-    if connection is not None:
-        create_transactions_table(connection)
+# Confirmar para salvar o progresso
+connection.commit()
 
-        # Example of inserting data
-        insert_transaction(connection, '00h 00', 'approved', 9)
-        insert_transaction(connection, '00h 01', 'denied', 8)
+while True:
+    # Obter a data e hora atual
+    current_time = datetime.now().strftime("%Hh %M")
+    current_date = date.today()
 
-    # Close the connection with the database
-    if connection is not None:
-        connection.close()
+    # Lista para armazenar todas as linhas relacionadas à hora atual
+    rows_to_insert_1 = []
+    rows_to_insert_2 = []
+
+    # Abrir o arquivo CSV 1 para encontrar todas as linhas que correspondem à hora atual
+    with open(csv_file_path_1, 'r') as file_1:
+        reader = csv.reader(file_1)
+
+        # Ignorar cabeçalho
+        next(reader)
+
+        for row in reader:
+            if row[0] == current_time:
+                # Converter o formato da coluna de tempo e incluir a data atual
+                time_str = f"{current_date.year}-{current_date.month:02d}-{current_date.day:02d} {row[0]}"
+                time_format = "%Y-%m-%d %Hh %M"
+                time_value = datetime.strptime(time_str, time_format)
+
+                # Adicionar a linha à lista
+                rows_to_insert_1.append((time_value, row[1], int(row[2])))
+
+    # Inserir todas as linhas no SQLite
+    for row in rows_to_insert_1:
+        cursor.execute("""
+            INSERT INTO {} (time, status, count)
+            VALUES (?, ?, ?)
+        """.format(table_name_1), row)
+
+    # Abrir o arquivo CSV 2 para encontrar todas as linhas que correspondem à hora atual
+    with open(csv_file_path_2, 'r') as file_2:
+        reader = csv.reader(file_2)
+
+        # Ignorar cabeçalho
+        next(reader)
+
+        for row in reader:
+            if row[0] == current_time:
+                # Converter o formato da coluna de tempo e incluir a data atual
+                time_str = f"{current_date.year}-{current_date.month:02d}-{current_date.day:02d} {row[0]}"
+                time_format = "%Y-%m-%d %Hh %M"
+                time_value = datetime.strptime(time_str, time_format)
+
+                # Adicionar a linha à lista
+                rows_to_insert_2.append((time_value, row[1], int(row[2])))
+
+    # Inserir todas as linhas no SQLite
+    for row in rows_to_insert_2:
+        cursor.execute("""
+            INSERT INTO {} (time, status, count)
+            VALUES (?, ?, ?)
+        """.format(table_name_2), row)
+
+    # Confirmar para salvar o progresso
+    connection.commit()
+
+    # Aguardar 60 segundos antes da próxima ação
+    time.sleep(60)
+
+# Fechar a conexão
+cursor.close()
+connection.close()
